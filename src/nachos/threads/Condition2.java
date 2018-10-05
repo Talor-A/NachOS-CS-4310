@@ -43,16 +43,18 @@ public class Condition2 {
     	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
     	
     	//add the current process to the linked list
+    	conditionLock.release();
     	
+    	boolean status = Machine.interrupt().disable();
     	waitQueue.add(KThread.currentThread());
-    	
-		conditionLock.release();
 		
 		//sleep, waiting for wake() to be called
 		
-		KThread.currentThread().sleep();
+		KThread.sleep();
+		
+		Machine.interrupt().restore(status);
 
-		conditionLock.acquire();
+		conditionLock.acquire(); //get the lock back
     }
 
     /**
@@ -65,8 +67,10 @@ public class Condition2 {
     	
     	if (!waitQueue.isEmpty())
     	{
+    		boolean status = Machine.interrupt().disable();
     		KThread thisThread = waitQueue.removeFirst();
     		thisThread.ready();
+    		Machine.interrupt().restore(status);
     	}
     }
 
