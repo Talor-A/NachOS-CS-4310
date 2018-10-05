@@ -2,6 +2,8 @@ package nachos.threads;
 
 import nachos.machine.*;
 
+import java.util.LinkedList;
+
 /**
  * An implementation of condition variables that disables interrupt()s for
  * synchronization.
@@ -20,39 +22,63 @@ public class Condition2 {
      *				lock whenever it uses <tt>sleep()</tt>,
      *				<tt>wake()</tt>, or <tt>wakeAll()</tt>.
      */
-    public Condition2(Lock conditionLock) {
-	this.conditionLock = conditionLock;
+	
+	private Lock conditionLock;
+	private LinkedList<KThread> waitQueue;
+	
+    public Condition2(Lock conditionLock)
+    {
+    	this.conditionLock = conditionLock;
+    	waitQueue = new LinkedList<KThread>();
     }
 
     /**
      * Atomically release the associated lock and go to sleep on this condition
      * variable until another thread wakes it using <tt>wake()</tt>. The
      * current thread must hold the associated lock. The thread will
-     * automatically reacquire the lock before <tt>sleep()</tt> returns.
+     * automatically re-acquire the lock before <tt>sleep()</tt> returns.
      */
-    public void sleep() {
-	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
+    public void sleep()
+    {
+    	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
+    	
+    	//add the current process to the linked list
+    	
+    	waitQueue.add(KThread.currentThread());
+    	
+		conditionLock.release();
+		
+		//sleep, waiting for wake() to be called
+		
+		KThread.currentThread().sleep();
 
-	conditionLock.release();
-
-	conditionLock.acquire();
+		conditionLock.acquire();
     }
 
     /**
      * Wake up at most one thread sleeping on this condition variable. The
      * current thread must hold the associated lock.
      */
-    public void wake() {
-	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
+    public void wake()
+    {
+    	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
+    	
+    	if (!waitQueue.isEmpty())
+    	{
+    		KThread thisThread = waitQueue.removeFirst();
+    		thisThread.ready();
+    	}
     }
 
     /**
      * Wake up all threads sleeping on this condition variable. The current
      * thread must hold the associated lock.
      */
-    public void wakeAll() {
-	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
+    public void wakeAll()
+    {
+    	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
+    	
+    	while (!waitQueue.isEmpty())
+    	    wake();
     }
-
-    private Lock conditionLock;
 }
