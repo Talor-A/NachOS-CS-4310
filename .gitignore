@@ -25,3 +25,6 @@
 hs_err_pid*
 .idea/
 .DS_Store
+
+bin/*.class
+bin/*.html
