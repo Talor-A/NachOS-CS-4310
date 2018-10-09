@@ -2,8 +2,6 @@ package nachos.threads;
 
 import nachos.machine.*;
 
-import java.util.Queue;
-
 /**
  * A KThread is a thread that can be used to execute Nachos kernel code. Nachos
  * allows multiple threads to run concurrently.
@@ -45,6 +43,12 @@ public class KThread {
      * create an idle thread as well.
      */
     public KThread() {
+    	
+    	boolean status = Machine.interrupt().disable();
+    	queue.acquire(this);
+    	Machine.interrupt().restore(status);
+    	
+    	
 	if (currentThread != null) {
 	    tcb = new TCB();
 	}	    
@@ -196,6 +200,11 @@ public class KThread {
 
 	currentThread.status = statusFinished;
 	
+	KThread threadToWait;
+	
+	while ((threadToWait = currentThread.queue.nextThread()) != null)
+		threadToWait.ready();
+	
 	sleep();
     }
 
@@ -273,43 +282,20 @@ public class KThread {
      * return immediately. This method must only be called once; the second
      * call is not guaranteed to return. This thread must not be the current
      * thread.
-
-	 * join() {
-	 *   Disable interrupts;
-	 *   if (joinQueue not be initiated) {
-	 *       create a new thread queue (joinQueue) with transfer priority flag opened
-	 *       joinQueue acquires this thread as holder
-	 *   }
-	 *   If (CurrentThread != self) and (status is not Finished) {
-	 *       add current thread to join queue
-	 *       sleep current thread
-	 *   }
-	 *
-	 *   Re-enable interrupts;
-	 * }
-	 */
-	public void join() {
+     */
+    public void join() {
 	Lib.debug(dbgThread, "Joining to thread: " + toString());
 
-	boolean status = Machine.interrupt().disable();
-
 	Lib.assertTrue(this != currentThread);
-
-	if(joinQueue==null) {
-		joinQueue = ThreadedKernel.scheduler.newThreadQueue(true);
-		joinQueue.acquire(this);
+	
+	boolean status = Machine.interrupt().disable();
+	
+	if (this.status != statusFinished) {
+		queue.waitForAccess(currentThread);
+		KThread.sleep();
 	}
-	if (this.status == statusFinished) {
-		joinQueue.nextThread();
-		return;
-	} else {
-		joinQueue.acquire(KThread.currentThread());
-//		KThread.sleep();
-	}
-
 	
 	Machine.interrupt().restore(status);
-
     }
 
     /**
@@ -472,8 +458,9 @@ public class KThread {
     private int id = numCreated++;
     /** Number of times the KThread constructor was called. */
     private static int numCreated = 0;
+    
+    ThreadQueue queue = ThreadedKernel.scheduler.newThreadQueue(true);
 
-    private static ThreadQueue joinQueue = null;
     private static ThreadQueue readyQueue = null;
     private static KThread currentThread = null;
     private static KThread toBeDestroyed = null;
