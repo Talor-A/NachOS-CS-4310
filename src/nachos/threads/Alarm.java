@@ -2,6 +2,8 @@ package nachos.threads;
 
 import nachos.machine.*;
 
+import java.util.ArrayList;
+
 /**
  * Uses the hardware timer to provide preemption, and to allow threads to sleep
  * until a certain time.
@@ -14,7 +16,19 @@ public class Alarm {
      * <p><b>Note</b>: Nachos will not function correctly with more than one
      * alarm.
      */
+	
+	private static Lock alarmLock;
+	private static Condition2 condition;
+	private ArrayList<Long> timeList;
+	private ArrayList<KThread> threadList;
+	
     public Alarm() {
+    	
+    alarmLock = new Lock();
+    condition = new Condition2(alarmLock);
+    timeList = new ArrayList<Long>();
+    threadList = new ArrayList<KThread>();
+    
 	Machine.timer().setInterruptHandler(new Runnable() {
 		public void run() { timerInterrupt(); }
 	    });
@@ -26,8 +40,26 @@ public class Alarm {
      * thread to yield, forcing a context switch if there is another thread
      * that should be run.
      */
-    public void timerInterrupt() {
-	KThread.currentThread().yield();
+    public void timerInterrupt()
+    {
+    	boolean machineStatus = Machine.interrupt().disable();
+    	
+    	//look through the entire list of times (and threads)
+    	for (int i = 0; i < timeList.size(); i++)
+    	{
+    		//if a thread has waited long enough, wake it up and remove it from the queues
+    		if(Machine.timer().getTime() > timeList.get(i))
+    		{
+    			KThread threadToBeWoken = threadList.remove(i);
+    			alarmLock.acquire();
+    			condition.wakeThisThread(threadToBeWoken);
+    			alarmLock.release();
+    			timeList.remove(i);
+    		}
+    	}
+    		
+    	Machine.interrupt().restore(machineStatus);
+    	KThread.currentThread().yield();
     }
 
     /**
@@ -44,10 +76,26 @@ public class Alarm {
      *
      * @see	nachos.machine.Timer#getTime()
      */
-    public void waitUntil(long x) {
-	// for now, cheat just to get something working (busy waiting is bad)
-	long wakeTime = Machine.timer().getTime() + x;
-	while (wakeTime > Machine.timer().getTime())
-	    KThread.yield();
+    public void waitUntil(long x)
+    {
+    	boolean machineStatus = Machine.interrupt().disable();
+    	
+    	//time must advance from now to now + x
+    	long timeUntilWakingUp = Machine.timer().getTime() + x;
+    	
+    	//if time has already advanced, don't bother sleeping the current thread
+    	if (Machine.timer().getTime() < timeUntilWakingUp)
+    	{
+    		//sleep the current thread
+    		alarmLock.acquire();
+    		condition.sleepThread();
+    		alarmLock.release();
+    		
+    		//add both the thread and the time to a list
+    		timeList.add(x);
+    		threadList.add(KThread.currentThread());
+    	}
+    	
+    	Machine.interrupt().restore(machineStatus);
     }
 }

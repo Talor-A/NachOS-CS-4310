@@ -2,6 +2,8 @@ package nachos.threads;
 
 import nachos.machine.*;
 
+import java.util.LinkedList;
+
 /**
  * A <i>communicator</i> allows threads to synchronously exchange 32-bit
  * messages. Multiple threads can be waiting to <i>speak</i>,
@@ -10,10 +12,23 @@ import nachos.machine.*;
  * threads can be paired off at this point.
  */
 public class Communicator {
+	
+	Lock lock;
+	Condition2 conditionSpeak;
+	Condition2 conditionListen;
+	int numberOfListeners;
+	LinkedList<Integer> queue;
+	
     /**
      * Allocate a new communicator.
      */
-    public Communicator() {
+    public Communicator() 
+    {	
+    	lock = new Lock();
+    	conditionSpeak = new Condition2(lock);
+    	conditionListen = new Condition2(lock);
+    	numberOfListeners = 0;
+    	queue = new LinkedList<Integer>();
     }
 
     /**
@@ -27,6 +42,23 @@ public class Communicator {
      * @param	word	the integer to transfer.
      */
     public void speak(int word) {
+    	
+    	lock.acquire();
+    	boolean machineStatus = Machine.interrupt().disable();
+    	
+    	queue.add(word);
+    	//nobody is listening
+    	if (numberOfListeners == 0)
+    	{
+    	    conditionSpeak.sleep();
+    	}
+    	
+    	//now there is a listener!
+    	assert(numberOfListeners > 0);
+    	conditionListen.wake();
+    	
+    	Machine.interrupt().restore(machineStatus);
+    	lock.release();
     }
 
     /**
@@ -36,6 +68,27 @@ public class Communicator {
      * @return	the integer transferred.
      */    
     public int listen() {
-	return 0;
+
+    	lock.acquire();
+    	numberOfListeners++;
+    	boolean machineStatus = Machine.interrupt().disable();
+    	
+    	//nobody is speaking, wait until there is a speaker
+    	if (queue.isEmpty())
+    	{
+    	    conditionListen.sleep();
+    	}
+    	
+    	
+    	conditionSpeak.wake();
+    	assert(!queue.isEmpty());
+    	
+    	int value = queue.removeFirst();
+    	lock.release();
+    
+    	numberOfListeners--;
+    	Machine.interrupt().restore(machineStatus);
+    	
+    	return value;//queue.removeFirst();
     }
 }
