@@ -45,14 +45,14 @@ public class KThread {
     public KThread() {
     	
     	condition = new Condition2(lock);
+    	queue = ThreadedKernel.scheduler.newThreadQueue(true);
     	
 	if (currentThread != null) {
 	    tcb = new TCB();
 	}	    
 	else {
 	    readyQueue = ThreadedKernel.scheduler.newThreadQueue(false);
-	    readyQueue.acquire(this);	
-	    
+	    readyQueue.acquire(this);	    
 	    queue.acquire(this);
 
 	    currentThread = this;
@@ -201,8 +201,7 @@ public class KThread {
 	
 	while (thread != null)
 	{
-		currentThread.queue.acquire(thread);
-		thread = currentThread.queue.nextThread();
+	    thread = currentThread.queue.nextThread();
 	}
 	
 	currentThread.condition.wakeAll();
@@ -474,7 +473,7 @@ public class KThread {
     
     private static Lock lock = new Lock();
     private Condition2 condition;
-    private ThreadQueue queue = ThreadedKernel.scheduler.newThreadQueue(true);
+    private ThreadQueue queue = null;
 
     private static ThreadQueue readyQueue = null;
     private static KThread currentThread = null;
