@@ -16,7 +16,11 @@ public class Alarm {
      * <p><b>Note</b>: Nachos will not function correctly with more than one
      * alarm.
      */
-	
+	 
+	/**
+		Use condition variables and two lists, one to list the system time until a thread
+		can awaken and one to list the threads that will be awakened at that time
+	*/
 	private static Lock alarmLock;
 	private static Condition2 condition;
 	private ArrayList<Long> timeList;
@@ -24,6 +28,7 @@ public class Alarm {
 	
     public Alarm() {
     	
+	//initialize all objects and variables
     alarmLock = new Lock();
     condition = new Condition2(alarmLock);
     timeList = new ArrayList<Long>();
@@ -50,11 +55,11 @@ public class Alarm {
     		//if a thread has waited long enough, wake it up and remove it from the queues
     		if(Machine.timer().getTime() > timeList.get(i))
     		{
-    			KThread threadToBeWoken = threadList.remove(i);
+    			KThread threadToBeWoken = threadList.remove(i); //get the thread from the list that has waited long enough
     			alarmLock.acquire();
-    			condition.wakeThisThread(threadToBeWoken);
+    			condition.wakeThisThread(threadToBeWoken); //wake up the thread to be awoken
     			alarmLock.release();
-    			timeList.remove(i);
+    			timeList.remove(i); //remove the time from the list
     		}
     	}
     		

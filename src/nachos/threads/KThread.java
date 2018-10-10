@@ -44,6 +44,7 @@ public class KThread {
      */
     public KThread() {
     	
+		//initialize the condition and thread queue
     	condition = new Condition2(lock);
     	queue = ThreadedKernel.scheduler.newThreadQueue(true);
     	
@@ -196,15 +197,15 @@ public class KThread {
 	Lib.assertTrue(toBeDestroyed == null);
 	toBeDestroyed = currentThread;
 	
-	lock.acquire();
-	KThread thread = currentThread.queue.nextThread();
+	lock.acquire(); //acquire the lock
+	KThread thread = currentThread.queue.nextThread(); //wakes the first thread in the queue
 	
-	while (thread != null)
+	while (thread != null) //wake the rest of the threads that are sleeping
 	{
 	    thread = currentThread.queue.nextThread();
 	}
 	
-	currentThread.condition.wakeAll();
+	currentThread.condition.wakeAll(); //wakes up all threads waiting on the condition
 	currentThread.queue = null;
 	lock.release();
 
@@ -295,11 +296,14 @@ public class KThread {
 
 	Lib.assertTrue(this != currentThread);
 	
-	lock.acquire();
+	lock.acquire(); //get the lock
 	
+	//the thread to join has already finished running, no need to suspend the current thread
 	if (status == statusFinished)
+	{
 		lock.release();
-	else
+	}
+	else //sleep the current thread until the other thread has finished
 	{
 		Machine.interrupt().disable();
 		this.queue.waitForAccess(currentThread);
@@ -471,6 +475,8 @@ public class KThread {
     /** Number of times the KThread constructor was called. */
     private static int numCreated = 0;
     
+	//must use condition variables
+	//also uses a thread queue
     private static Lock lock = new Lock();
     private Condition2 condition;
     private ThreadQueue queue = null;

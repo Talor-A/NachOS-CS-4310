@@ -13,6 +13,13 @@ import java.util.LinkedList;
  */
 public class Communicator {
 	
+	/**
+		We need two condition variables, one to hold a queue or suspend all listeners,
+		and one to hold a queue or suspend all speakers.
+		
+		We keep track of the number of listeners with an integer and the number of speakers
+		indirectly using a LinkedList as a queue, which holds the speaker's words.
+	*/
 	Lock lock;
 	Condition2 conditionSpeak;
 	Condition2 conditionListen;
@@ -24,6 +31,7 @@ public class Communicator {
      */
     public Communicator() 
     {	
+		//initialize all the objects and variables
     	lock = new Lock();
     	conditionSpeak = new Condition2(lock);
     	conditionListen = new Condition2(lock);
@@ -46,16 +54,17 @@ public class Communicator {
     	lock.acquire();
     	boolean machineStatus = Machine.interrupt().disable();
     	
-    	queue.add(word);
+    	queue.add(word); //add the word to a queue of words to be listened to
+		
     	//nobody is listening
     	if (numberOfListeners == 0)
     	{
-    	    conditionSpeak.sleep();
+    	    conditionSpeak.sleep(); //sleep the speakers until somebody is listening
     	}
     	
     	//now there is a listener!
     	assert(numberOfListeners > 0);
-    	conditionListen.wake();
+    	conditionListen.wake(); //wake a listener to hear the Good News!
     	
     	Machine.interrupt().restore(machineStatus);
     	lock.release();
@@ -70,25 +79,24 @@ public class Communicator {
     public int listen() {
 
     	lock.acquire();
-    	numberOfListeners++;
+    	numberOfListeners++; //increment the number of listeners
     	boolean machineStatus = Machine.interrupt().disable();
     	
     	//nobody is speaking, wait until there is a speaker
     	if (queue.isEmpty())
     	{
-    	    conditionListen.sleep();
+    	    conditionListen.sleep(); //fall asleep until a speaker comes to wake the thread up
     	}
     	
+    	conditionSpeak.wake(); //wake a speaker so the thread can listen to them
+    	assert(!queue.isEmpty()); //there should now be a word to receive
     	
-    	conditionSpeak.wake();
-    	assert(!queue.isEmpty());
-    	
-    	int value = queue.removeFirst();
+    	int value = queue.removeFirst(); //remove the word from the queue
     	lock.release();
     
-    	numberOfListeners--;
+    	numberOfListeners--; //decrement the number of listeners
     	Machine.interrupt().restore(machineStatus);
     	
-    	return value;//queue.removeFirst();
+    	return value; //return the word
     }
 }
