@@ -25,11 +25,9 @@ public class Condition2 {
 	
 	private Lock conditionLock;
 	private LinkedList<KThread> waitQueue; //used for a queue
-	private LinkedList<KThread> threadList; //used to wake a specific thread
 	
     public Condition2(Lock conditionLock)
     {
-		threadList = new LinkedList<>();
 		waitQueue = new LinkedList<KThread>();
     	this.conditionLock = conditionLock;
     }
