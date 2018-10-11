@@ -1,6 +1,7 @@
 package nachos.threads;
 
 import nachos.machine.*;
+import java.util.PriorityQueue;
 
 import java.util.ArrayList;
 
@@ -21,18 +22,14 @@ public class Alarm {
 		Use condition variables and two lists, one to list the system time until a thread
 		can awaken and one to list the threads that will be awakened at that time
 	*/
-	private static Lock alarmLock;
-	private static Condition2 condition;
-	private ArrayList<Long> timeList;
-	private ArrayList<KThread> threadList;
+
+	//create a priorityQueue to hold Data objects (see private inner class Data at bottom of file)
+	private PriorityQueue<Data> priorityQueue;
 	
     public Alarm() {
     	
-	//initialize all objects and variables
-    alarmLock = new Lock();
-    condition = new Condition2(alarmLock);
-    timeList = new ArrayList<Long>();
-    threadList = new ArrayList<KThread>();
+	//initialize the priority queue
+    priorityQueue = new PriorityQueue<Data>();
     
 	Machine.timer().setInterruptHandler(new Runnable() {
 		public void run() { timerInterrupt(); }
@@ -49,18 +46,16 @@ public class Alarm {
     {
     	boolean machineStatus = Machine.interrupt().disable();
     	
-    	//look through the entire list of times (and threads)
-    	for (int i = 0; i < timeList.size(); i++)
+    	//if a thread has waited long enough, wake it up and remove it from the priority queue.
+    	//keep doing this until the queue is empty or the threads remaining in the queue must wait longer
+    	while(!priorityQueue.isEmpty() && (Machine.timer().getTime() > priorityQueue.peek().timeToWake))
     	{
-    		//if a thread has waited long enough, wake it up and remove it from the queues
-    		if(Machine.timer().getTime() > timeList.get(i))
-    		{
-    			KThread threadToBeWoken = threadList.remove(i); //get the thread from the list that has waited long enough
-    			alarmLock.acquire();
-    			condition.wakeThisThread(threadToBeWoken); //wake up the thread to be awoken
-    			alarmLock.release();
-    			timeList.remove(i); //remove the time from the list
-    		}
+    		Data encapsulate = priorityQueue.remove(); //get the Data object from the priority queue
+    		Condition2 condition = encapsulate.condition; //get the condition object from the Data object
+    		Lock lock = encapsulate.lock; //get the lock from the Data object
+    		lock.acquire();
+    		condition.wake(); //wake up the thread to be awoken
+    		lock.release();
     	}
     		
     	Machine.interrupt().restore(machineStatus);
@@ -86,21 +81,60 @@ public class Alarm {
     	boolean machineStatus = Machine.interrupt().disable();
     	
     	//time must advance from now to now + x
-    	long timeUntilWakingUp = Machine.timer().getTime() + x;
+    	long timeToWake = Machine.timer().getTime() + x;
+    	
+    	//create a new lock and a new condition2 each time a thread calls this method
+    	Lock lock = new Lock();
+    	Condition2 condition = new Condition2(lock);
     	
     	//if time has already advanced, don't bother sleeping the current thread
-    	if (Machine.timer().getTime() < timeUntilWakingUp)
+    	//otherwise, this thread must sleep
+    	if (Machine.timer().getTime() < timeToWake)
     	{
-    		//sleep the current thread
-    		alarmLock.acquire();
-    		condition.sleepThread();
-    		alarmLock.release();
+    		//add the condition, time to wake up, and lock to the priority queue
+    		priorityQueue.add(new Data(condition, timeToWake, lock));
     		
-    		//add both the thread and the time to a list
-    		timeList.add(x);
-    		threadList.add(KThread.currentThread());
+    		//sleep the current thread
+    		lock.acquire();
+    		condition.sleep();
+    		lock.release();
     	}
     	
     	Machine.interrupt().restore(machineStatus);
+    }
+    
+    /**
+     * A private inner class that is used to encapsulate data for the priority queue.
+     * This class takes a condition2, lock, and time in for the constructor
+     */
+    private class Data implements Comparable<Data>
+    {
+    	Condition2 condition;
+    	long timeToWake;
+    	Lock lock;
+    	
+    	public Data(Condition2 thisCondition, long timeToWakeUp, Lock thisLock)
+    	{
+    		condition = thisCondition;
+    		timeToWake = timeToWakeUp;
+    		lock = thisLock;
+    	}
+    	
+    	//override compareTo method, sort based upon times to wake
+    	public int compareTo(Data other)
+    	{
+    		if (this.timeToWake > other.timeToWake)
+    		{
+    			return 1;
+    		}
+    		else if (this.timeToWake < other.timeToWake)
+    		{
+    			return -1;
+    		}
+    		else
+    		{
+    			return 0;
+    		}
+    	}
     }
 }

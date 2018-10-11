@@ -86,44 +86,4 @@ public class Condition2 {
     	while (!waitQueue.isEmpty()) //simply call wake() for all sleeping threads
     	    wake();
     }
-    
-	//sleeps a thread, adding the thread to a linked list instead of a queue
-    public void sleepThread()
-    {
-    	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
-    	
-    	conditionLock.release();
-    	boolean status = Machine.interrupt().disable();
-		
-    	threadList.add(KThread.currentThread()); //add the thread to a list
-    	KThread.sleep(); //sleep the thread
-		
-    	Machine.interrupt().restore(status);
-    	conditionLock.acquire();
-    }
-    
-	//wakes a specific thread from the linked list
-    public void wakeThisThread(KThread threadToWake)
-    {
-    	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
-    	
-    	conditionLock.release();
-    	boolean status = Machine.interrupt().disable();
-    	
-		//don't wake a thread if there are none sleeping
-    	if (!threadList.isEmpty())
-    	{
-			//iterate over all sleeping threads
-    		for (int i = 0; i < threadList.size(); i++)
-    		{
-				//if the thread is the one to wake, wake it up
-    			if (threadToWake.compareTo(threadList.get(i)) == 0)
-    			{
-    				threadList.remove(i).ready();
-    			}
-    		}
-    	}
-    	
-    	Machine.interrupt().restore(status);
-    }
 }
