@@ -211,8 +211,6 @@ public class KThread {
 
 	currentThread.status = statusFinished;
 	
-	Machine.interrupt().disable();
-	
 	sleep();
     }
 

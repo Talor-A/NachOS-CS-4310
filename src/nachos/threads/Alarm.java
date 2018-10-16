@@ -44,8 +44,6 @@ public class Alarm {
      */
     public void timerInterrupt()
     {
-    	boolean machineStatus = Machine.interrupt().disable();
-    	
     	//if a thread has waited long enough, wake it up and remove it from the priority queue.
     	//keep doing this until the queue is empty or the threads remaining in the queue must wait longer
     	while(!priorityQueue.isEmpty() && (Machine.timer().getTime() > priorityQueue.peek().timeToWake))
@@ -58,7 +56,6 @@ public class Alarm {
     		lock.release();
     	}
     		
-    	Machine.interrupt().restore(machineStatus);
     	KThread.currentThread().yield();
     }
 
@@ -78,8 +75,6 @@ public class Alarm {
      */
     public void waitUntil(long x)
     {
-    	boolean machineStatus = Machine.interrupt().disable();
-    	
     	//time must advance from now to now + x
     	long timeToWake = Machine.timer().getTime() + x;
     	
@@ -91,16 +86,15 @@ public class Alarm {
     	//otherwise, this thread must sleep
     	if (Machine.timer().getTime() < timeToWake)
     	{
+    		lock.acquire();
+    		
     		//add the condition, time to wake up, and lock to the priority queue
     		priorityQueue.add(new Data(condition, timeToWake, lock));
     		
     		//sleep the current thread
-    		lock.acquire();
     		condition.sleep();
     		lock.release();
     	}
-    	
-    	Machine.interrupt().restore(machineStatus);
     }
     
     /**
