@@ -44,9 +44,8 @@ public class KThread {
      */
     public KThread() {
     	
-		//initialize the condition and thread queue
+		//initialize the condition2 object
     	condition = new Condition2(lock);
-    	queue = ThreadedKernel.scheduler.newThreadQueue(true);
     	
 	if (currentThread != null) {
 	    tcb = new TCB();
@@ -54,7 +53,6 @@ public class KThread {
 	else {
 	    readyQueue = ThreadedKernel.scheduler.newThreadQueue(false);
 	    readyQueue.acquire(this);	    
-	    queue.acquire(this);
 
 	    currentThread = this;
 	    tcb = TCB.currentTCB();
@@ -198,15 +196,8 @@ public class KThread {
 	toBeDestroyed = currentThread;
 	
 	lock.acquire(); //acquire the lock
-	KThread thread = currentThread.queue.nextThread(); //wakes the first thread in the queue
 	
-	while (thread != null) //wake the rest of the threads that are sleeping
-	{
-	    thread = currentThread.queue.nextThread();
-	}
-	
-	currentThread.condition.wakeAll(); //wakes up all threads waiting on the condition
-	currentThread.queue = null;
+	currentThread.condition.wake(); //wakes up all threads waiting on the condition
 	lock.release();
 
 	currentThread.status = statusFinished;
@@ -297,18 +288,12 @@ public class KThread {
 	lock.acquire(); //get the lock
 	
 	//the thread to join has already finished running, no need to suspend the current thread
-	if (status == statusFinished)
+	if (status != statusFinished)
 	{
-		lock.release();
+		condition.sleep(); //necessary to suspend current thread until other thread finishes
 	}
-	else //sleep the current thread until the other thread has finished
-	{
-		Machine.interrupt().disable();
-		this.queue.waitForAccess(currentThread);
-		Machine.interrupt().enable();
-		condition.sleep();
-		lock.release();
-	}
+
+	lock.release();
 
     }
 
@@ -474,10 +459,8 @@ public class KThread {
     private static int numCreated = 0;
     
 	//must use condition variables
-	//also uses a thread queue
     private static Lock lock = new Lock();
     private Condition2 condition;
-    private ThreadQueue queue = null;
 
     private static ThreadQueue readyQueue = null;
     private static KThread currentThread = null;

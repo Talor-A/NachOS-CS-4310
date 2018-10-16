@@ -89,7 +89,7 @@ public class Communicator {
     	int value = queue.removeFirst(); //remove the word from the queue
     
     	numberOfListeners--; //decrement the number of listeners
-    	lock.release();
+    	lock.release(); //release the lock
     	
     	return value; //return the word
     }
