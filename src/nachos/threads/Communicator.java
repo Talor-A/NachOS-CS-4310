@@ -1,7 +1,5 @@
 package nachos.threads;
 
-import nachos.machine.*;
-
 import java.util.LinkedList;
 
 /**
@@ -52,7 +50,6 @@ public class Communicator {
     public void speak(int word) {
     	
     	lock.acquire();
-    	boolean machineStatus = Machine.interrupt().disable();
     	
     	queue.add(word); //add the word to a queue of words to be listened to
 		
@@ -66,7 +63,6 @@ public class Communicator {
     	assert(numberOfListeners > 0);
     	conditionListen.wake(); //wake a listener to hear the Good News!
     	
-    	Machine.interrupt().restore(machineStatus);
     	lock.release();
     }
 
@@ -80,10 +76,9 @@ public class Communicator {
 
     	lock.acquire();
     	numberOfListeners++; //increment the number of listeners
-    	boolean machineStatus = Machine.interrupt().disable();
     	
     	//nobody is speaking, wait until there is a speaker
-    	if (queue.isEmpty())
+    	while (queue.isEmpty())
     	{
     	    conditionListen.sleep(); //fall asleep until a speaker comes to wake the thread up
     	}
@@ -92,10 +87,9 @@ public class Communicator {
     	assert(!queue.isEmpty()); //there should now be a word to receive
     	
     	int value = queue.removeFirst(); //remove the word from the queue
-    	lock.release();
     
     	numberOfListeners--; //decrement the number of listeners
-    	Machine.interrupt().restore(machineStatus);
+    	lock.release();
     	
     	return value; //return the word
     }
