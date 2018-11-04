@@ -2,11 +2,8 @@ package nachos.threads;
 
 import nachos.machine.*;
 
-import java.util.TreeSet;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
 
-import java.util.LinkedList;
 /**
  * A scheduler that chooses threads based on their priorities.
  *
@@ -131,25 +128,33 @@ public class PriorityScheduler extends Scheduler {
         PriorityQueue(boolean transferPriority)
         {
             this.transferPriority = transferPriority;
+            lock = new Lock();
         }
 
         public void waitForAccess(KThread thread)
         {
-            Lib.assertTrue(Machine.interrupt().disabled());
+            lock.acquire();
             getThreadState(thread).waitForAccess(this);
+            lock.release();
         }
 
         public void acquire(KThread thread)
         {
-            Lib.assertTrue(Machine.interrupt().disabled());
+            lock.acquire();
             getThreadState(thread).acquire(this);
+            lock.release();
         }
 
         public KThread nextThread()
         {
-            Lib.assertTrue(Machine.interrupt().disabled());
+            lock.acquire();
             // implement me
+            this.reorder();
+            ThreadState next = this.waiting.poll();
+            if(next != null && transferPriority) {
 
+            }
+            lock.release();
             return null;
         }
 
@@ -162,8 +167,16 @@ public class PriorityScheduler extends Scheduler {
          */
         protected ThreadState pickNextThread()
         {
-            // implement me
-            return null;
+            // re-sort waitQueue, then peek
+            this.reorder();
+            return this.waiting.peek();
+        }
+
+        // utility function to re-sort waitQueue to ensure proper order if elements in queue are updated
+        private void reorder() {
+            lock.acquire();
+            this.waiting = new java.util.PriorityQueue<ThreadState>(waiting);
+            lock.release();
         }
 
         public void print()
@@ -176,7 +189,9 @@ public class PriorityScheduler extends Scheduler {
          * <tt>true</tt> if this queue should transfer priority from waiting
          * threads to the owning thread.
          */
+        private java.util.PriorityQueue<ThreadState> waiting = new java.util.PriorityQueue<ThreadState>();
         public boolean transferPriority;
+        Lock lock;
     } //end PriorityQueue extends ThreadQueue class
 
     /**
@@ -194,9 +209,9 @@ public class PriorityScheduler extends Scheduler {
         protected int priority;
 
         public long age = Machine.timer().getTime();
-        protected LinkedList<PriorityThreadQueue> onQueues;
+        protected LinkedList<PriorityQueue> onQueues;
         protected int effectivePriority;
-        protected PriorityThreadQueue waiting;
+        protected PriorityQueue waiting;
 
         /**
          * Allocate a new <tt>ThreadState</tt> object and associate it with the
@@ -231,6 +246,13 @@ public class PriorityScheduler extends Scheduler {
             // implement me
             return priority;
         }
+
+        /*public int getEffectivePriority(HashSet<ThreadState> ePriority) {
+            if(ePriority.contains(this)) return this.priority;
+            effectivePriority = priority;
+
+            for(PriorityQueue)
+        }*/
 
         /**
          * Set the priority of the associated thread to the specified value.
@@ -288,31 +310,4 @@ public class PriorityScheduler extends Scheduler {
      *@ProfessorRodriguez: The solution should involve creating a subclass of ThreadQueue that will work
      *						with the existing Lock, Semaphore, and Condition classes.
      */
-    protected class PriorityThreadQueue extends ThreadQueue
-    {
-
-        @Override
-        public void waitForAccess(KThread thread) {
-            // TODO Auto-generated method stub
-
-        }
-
-        @Override
-        public KThread nextThread() {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public void acquire(KThread thread) {
-            // TODO Auto-generated method stub
-
-        }
-
-        @Override
-        public void print() {
-            // TODO Auto-generated method stub
-
-        }
-    }
 }
