@@ -236,7 +236,7 @@ public class PriorityScheduler extends Scheduler {
          * @see    nachos.threads.ThreadQueue#waitForAccess
          */
         public void waitForAccess(PriorityThreadQueue waitQueue) {
-            // implement me
+            waitQueue.add(this.thread);
         }
 
         /**
@@ -278,7 +278,8 @@ public class PriorityScheduler extends Scheduler {
         @Override
         public KThread nextThread() {
             // TODO Auto-generated method stub
-            return null;
+            if (isEmpty()) return null;
+            return priorityQueue.poll().thread;
         }
 
         @Override
@@ -294,6 +295,9 @@ public class PriorityScheduler extends Scheduler {
         }
         public boolean isEmpty() {
             return priorityQueue.isEmpty();
+        }
+        public void add(KThread thread) {
+            priorityQueue.add(getThreadState(thread));
         }
     }
 }
