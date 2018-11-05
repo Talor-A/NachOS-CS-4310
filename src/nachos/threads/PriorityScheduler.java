@@ -178,7 +178,8 @@ public class PriorityScheduler extends Scheduler {
      *
      * @see    nachos.threads.KThread#schedulingState
      */
-    protected class ThreadState {
+    protected class ThreadState implements Comparable<ThreadState>
+    {
         /**
          * Allocate a new <tt>ThreadState</tt> object and associate it with the
          * specified thread.
@@ -237,6 +238,7 @@ public class PriorityScheduler extends Scheduler {
          */
         public void waitForAccess(PriorityThreadQueue waitQueue) {
             waitQueue.add(this.thread);
+            this.waitStartTime = Machine.timer().getTime();
         }
 
         /**
@@ -249,7 +251,8 @@ public class PriorityScheduler extends Scheduler {
          * @see    nachos.threads.ThreadQueue#acquire
          * @see    nachos.threads.ThreadQueue#nextThread
          */
-        public void acquire(PriorityThreadQueue waitQueue) {
+        public void acquire(PriorityThreadQueue waitQueue) 
+        {
             // implement me
             Lib.assertTrue(waitQueue.isEmpty());
         }
@@ -262,7 +265,19 @@ public class PriorityScheduler extends Scheduler {
          * The priority of the associated thread.
          */
         protected int priority;
+        protected long waitStartTime;
+        
+	@Override
+	public int compareTo(ThreadState o)
+	{
+	    if (this.priority > o.priority) return 1;
+	    if (this.priority < o.priority) return -1;
+	    // priorities are equal
+	    if (this.waitStartTime < o.waitStartTime) return -1;
+	    return 1;
+	}
     }
+    
     protected class PriorityThreadQueue extends ThreadQueue
     {
         protected PriorityQueue<ThreadState> priorityQueue = new PriorityQueue<ThreadState>();
