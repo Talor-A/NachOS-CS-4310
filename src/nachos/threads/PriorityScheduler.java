@@ -5,6 +5,7 @@ import nachos.machine.*;
 import java.util.TreeSet;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.PriorityQueue;
 
 /**
@@ -181,6 +182,23 @@ public class PriorityScheduler extends Scheduler {
     protected class ThreadState implements Comparable<ThreadState>
     {
         /**
+         * The thread with which this object is associated.
+         */
+        protected KThread thread;
+        /**
+         * The priority of the associated thread.
+         */
+        protected int priority;
+        /**
+         * The system time that the associated thread began waiting.
+         */
+        protected long waitStartTime;
+        /**
+         * The list of thread queues that the associated thread has acquired.
+         */
+        protected LinkedList<PriorityThreadQueue> acquiredQueues;
+        
+        /**
          * Allocate a new <tt>ThreadState</tt> object and associate it with the
          * specified thread.
          *
@@ -188,7 +206,7 @@ public class PriorityScheduler extends Scheduler {
          */
         public ThreadState(KThread thread) {
             this.thread = thread;
-
+            acquiredQueues = new LinkedList<>();
             setPriority(priorityDefault);
         }
 
@@ -237,8 +255,8 @@ public class PriorityScheduler extends Scheduler {
          * @see    nachos.threads.ThreadQueue#waitForAccess
          */
         public void waitForAccess(PriorityThreadQueue waitQueue) {
-            waitQueue.add(this.thread);
             this.waitStartTime = Machine.timer().getTime();
+            waitQueue.add(this.thread);
         }
 
         /**
@@ -255,17 +273,13 @@ public class PriorityScheduler extends Scheduler {
         {
             // implement me
             Lib.assertTrue(waitQueue.isEmpty());
+            acquiredQueues.add(waitQueue);
         }
-
-        /**
-         * The thread with which this object is associated.
-         */
-        protected KThread thread;
-        /**
-         * The priority of the associated thread.
-         */
-        protected int priority;
-        protected long waitStartTime;
+        
+        public void release(PriorityThreadQueue waitQueue)
+        {
+            acquiredQueues.remove(waitQueue);
+        }
         
 	@Override
 	public int compareTo(ThreadState o)
@@ -294,7 +308,9 @@ public class PriorityScheduler extends Scheduler {
         public KThread nextThread() {
             // TODO Auto-generated method stub
             if (isEmpty()) return null;
-            return priorityQueue.poll().thread;
+            KThread thread = priorityQueue.poll().thread;
+            acquire(thread);
+            return thread;
         }
 
         @Override
@@ -308,6 +324,14 @@ public class PriorityScheduler extends Scheduler {
             // TODO Auto-generated method stub
 
         }
+        
+//        @Override
+//        public boolean equals(Object obj)
+//        {
+//            if (obj == null || obj.getClass() != this.getClass()) return false;
+//            
+//        }
+
         public boolean isEmpty() {
             return priorityQueue.isEmpty();
         }
