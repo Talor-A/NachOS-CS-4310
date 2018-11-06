@@ -3,6 +3,8 @@ package nachos.threads;
 import nachos.machine.*;
 
 import java.util.TreeSet;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -227,6 +229,8 @@ public class PriorityScheduler extends Scheduler {
          */
         protected LinkedList<PriorityThreadQueue> acquiredQueues;
         
+        protected PriorityThreadQueue waitingQueue;
+        
         protected int effectivePriority;
         
         /**
@@ -261,7 +265,22 @@ public class PriorityScheduler extends Scheduler {
         public int getEffectivePriority()
         {
             // implement me
-            return priority;
+            return effectivePriority;
+        }
+        
+        private void calculateEffectivePriority()
+        {
+            //ArrayList<ThreadState> calc;
+            ThreadState[] a = (ThreadState[])waitingQueue.priorityQueue.toArray();
+            Arrays.sort(a);
+            for (int i = 0; i < a.length; i++)
+            {
+                if (a[i] == this)
+                {
+                    effectivePriority = i;
+                    break;
+                }
+            }
         }
 
         /**
@@ -275,6 +294,8 @@ public class PriorityScheduler extends Scheduler {
                 return;
 
             this.priority = priority;
+            
+            calculateEffectivePriority();
 
             // implement me
         }
@@ -294,6 +315,8 @@ public class PriorityScheduler extends Scheduler {
         {
             this.waitingTime = Machine.timer().getTime();
             waitQueue.add(this.thread);
+            waitingQueue = waitQueue;
+            calculateEffectivePriority();
         }
 
         /**
@@ -311,11 +334,13 @@ public class PriorityScheduler extends Scheduler {
             // implement me
             Lib.assertTrue(waitQueue.isEmpty());
             acquiredQueues.add(waitQueue);
+            calculateEffectivePriority();
         }
         
         public void release(PriorityThreadQueue waitQueue)
         {
             acquiredQueues.remove(waitQueue);
+            calculateEffectivePriority();
         }
         
         @Override
