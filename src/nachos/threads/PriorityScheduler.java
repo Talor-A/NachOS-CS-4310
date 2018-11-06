@@ -174,7 +174,7 @@ public class PriorityScheduler extends Scheduler {
         protected ThreadState pickNextThread()
         {
             // implement me
-            return null;
+            return priorityQueue.peek();
         }
 
         public void print()
