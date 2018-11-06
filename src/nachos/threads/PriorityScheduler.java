@@ -159,7 +159,6 @@ public class PriorityScheduler extends Scheduler {
 
         public KThread nextThread()
         {
-        	System.out.println("called nextThread");
             Lib.assertTrue(Machine.interrupt().disabled());
             // implement me
             if (isEmpty()) return null;
@@ -334,10 +333,9 @@ public class PriorityScheduler extends Scheduler {
          * @see    nachos.threads.ThreadQueue#acquire
          * @see    nachos.threads.ThreadQueue#nextThread
          */
-        public void acquire(PriorityThreadQueue waitQueue) 
+        public void acquire(PriorityThreadQueue waitQueue)
         {
             // implement me
-            Lib.assertTrue(waitQueue.isEmpty());
             acquiredQueues.add(waitQueue);
             calculateEffectivePriority();
         }
