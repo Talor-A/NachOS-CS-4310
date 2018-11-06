@@ -17,7 +17,7 @@ import nachos.threads.ThreadedKernel;
  * </ol>
  * </li>
  * 
- * @author Isaac
+ * 
  * 
  */
 public class ThreadGrader5 extends BasicTestGrader {
