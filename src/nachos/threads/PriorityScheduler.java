@@ -127,50 +127,79 @@ public class PriorityScheduler extends Scheduler {
     /**
      * A <tt>ThreadQueue</tt> that sorts threads by priority.
      */
-//    protected class PriorityQueue extends ThreadQueue {
-//        PriorityQueue(boolean transferPriority) {
-//            this.transferPriority = transferPriority;
-//        }
-//
-//        public void waitForAccess(KThread thread) {
-//            Lib.assertTrue(Machine.interrupt().disabled());
-//            getThreadState(thread).waitForAccess(this);
-//        }
-//
-//        public void acquire(KThread thread) {
-//            Lib.assertTrue(Machine.interrupt().disabled());
-//            getThreadState(thread).acquire(this);
-//        }
-//
-//        public KThread nextThread() {
-//            Lib.assertTrue(Machine.interrupt().disabled());
-//            // implement me
-//            return null;
-//        }
-//
-//        /**
-//         * Return the next thread that <tt>nextThread()</tt> would return,
-//         * without modifying the state of this queue.
-//         *
-//         * @return the next thread that <tt>nextThread()</tt> would
-//         * return.
-//         */
-//        protected ThreadState pickNextThread() {
-//            // implement me
-//            return null;
-//        }
-//
-//        public void print() {
-//            Lib.assertTrue(Machine.interrupt().disabled());
-//            // implement me (if you want)
-//        }
-//
-//        /**
-//         * <tt>true</tt> if this queue should transfer priority from waiting
-//         * threads to the owning thread.
-//         */
-//        public boolean transferPriority;
-//    }
+    protected class PriorityThreadQueue extends ThreadQueue
+    {
+    	/**
+         * <tt>true</tt> if this queue should transfer priority from waiting
+         * threads to the owning thread.
+         */
+        public boolean transferPriority;
+        
+        protected PriorityQueue<ThreadState> priorityQueue = new PriorityQueue<ThreadState>();
+    	
+        PriorityThreadQueue(boolean transferPriority)
+        {
+            this.transferPriority = transferPriority;
+        }
+
+        public void waitForAccess(KThread thread)
+        {
+            Lib.assertTrue(Machine.interrupt().disabled());
+            getThreadState(thread).waitForAccess(this);
+        }
+
+        public void acquire(KThread thread)
+        {
+            Lib.assertTrue(Machine.interrupt().disabled());
+            getThreadState(thread).acquire(this);
+        }
+
+        public KThread nextThread()
+        {
+            Lib.assertTrue(Machine.interrupt().disabled());
+            // implement me
+            if (isEmpty()) return null;
+            KThread thread = priorityQueue.poll().thread;
+            acquire(thread);
+            return thread;
+        }
+
+        /**
+         * Return the next thread that <tt>nextThread()</tt> would return,
+         * without modifying the state of this queue.
+         *
+         * @return the next thread that <tt>nextThread()</tt> would
+         * return.
+         */
+        protected ThreadState pickNextThread()
+        {
+            // implement me
+            return null;
+        }
+
+        public void print()
+        {
+            Lib.assertTrue(Machine.interrupt().disabled());
+            // implement me (if you want)
+        }
+        
+        public boolean isEmpty()
+        {
+            return priorityQueue.isEmpty();
+        }
+        
+        public void add(KThread thread)
+        {
+            priorityQueue.add(getThreadState(thread));
+        }
+        
+//      @Override
+//      public boolean equals(Object obj)
+//      {
+//          if (obj == null || obj.getClass() != this.getClass()) return false;
+//          
+//      }
+    }
 
     /**
      * The scheduling state of a thread. This should include the thread's
@@ -290,53 +319,5 @@ public class PriorityScheduler extends Scheduler {
 	    if (this.waitStartTime < o.waitStartTime) return -1;
 	    return 1;
 	}
-    }
-    
-    protected class PriorityThreadQueue extends ThreadQueue
-    {
-        protected PriorityQueue<ThreadState> priorityQueue = new PriorityQueue<ThreadState>();
-
-        public PriorityThreadQueue(boolean transferPriority) {}
-
-        @Override
-        public void waitForAccess(KThread thread) {
-            // TODO Auto-generated method stub
-            getThreadState(thread).waitForAccess(this);
-        }
-
-        @Override
-        public KThread nextThread() {
-            // TODO Auto-generated method stub
-            if (isEmpty()) return null;
-            KThread thread = priorityQueue.poll().thread;
-            acquire(thread);
-            return thread;
-        }
-
-        @Override
-        public void acquire(KThread thread) {
-            // TODO Auto-generated method stub
-            getThreadState(thread).acquire(this);
-        }
-
-        @Override
-        public void print() {
-            // TODO Auto-generated method stub
-
-        }
-        
-//        @Override
-//        public boolean equals(Object obj)
-//        {
-//            if (obj == null || obj.getClass() != this.getClass()) return false;
-//            
-//        }
-
-        public boolean isEmpty() {
-            return priorityQueue.isEmpty();
-        }
-        public void add(KThread thread) {
-            priorityQueue.add(getThreadState(thread));
-        }
     }
 }
