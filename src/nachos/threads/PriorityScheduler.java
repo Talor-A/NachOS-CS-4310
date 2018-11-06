@@ -141,6 +141,7 @@ public class PriorityScheduler extends Scheduler {
     	
         PriorityThreadQueue(boolean transferPriority)
         {
+        	System.out.println("called constructor!!!!!!");
             this.transferPriority = transferPriority;
         }
 
@@ -158,6 +159,7 @@ public class PriorityScheduler extends Scheduler {
 
         public KThread nextThread()
         {
+        	System.out.println("called nextThread");
             Lib.assertTrue(Machine.interrupt().disabled());
             // implement me
             if (isEmpty()) return null;
@@ -176,6 +178,7 @@ public class PriorityScheduler extends Scheduler {
         protected ThreadState pickNextThread()
         {
             // implement me
+        	System.out.println("called pickNextThread");
         	return priorityQueue.peek();
         }
 
@@ -245,6 +248,7 @@ public class PriorityScheduler extends Scheduler {
             acquiredQueues = new LinkedList<PriorityThreadQueue>();
             setPriority(priorityDefault);
             waitingTime = Machine.timer().getTime();
+            calculateEffectivePriority();
         }
 
         /**
@@ -265,13 +269,13 @@ public class PriorityScheduler extends Scheduler {
         public int getEffectivePriority()
         {
             // implement me
+        	calculateEffectivePriority();
             return effectivePriority;
         }
         
         private void calculateEffectivePriority()
         {
-            //ArrayList<ThreadState> calc;
-            ThreadState[] a = (ThreadState[])waitingQueue.priorityQueue.toArray();
+            /**ThreadState[] a = (ThreadState[])waitingQueue.priorityQueue.toArray();
             Arrays.sort(a);
             for (int i = 0; i < a.length; i++)
             {
@@ -280,7 +284,8 @@ public class PriorityScheduler extends Scheduler {
                     effectivePriority = i;
                     break;
                 }
-            }
+            }*/
+        	effectivePriority = priority;
         }
 
         /**
@@ -346,7 +351,7 @@ public class PriorityScheduler extends Scheduler {
         @Override
         public int compareTo(ThreadState o)
         {
-        	if (this.priority > o.priority) 
+        	if (this.priority > o.priority) //7 maximum > 3
         	{
         		return 1;
         	}
