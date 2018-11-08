@@ -3,6 +3,8 @@ package nachos.threads;
 import nachos.machine.*;
 
 import java.util.TreeSet;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -129,14 +131,14 @@ public class PriorityScheduler extends Scheduler {
      */
     protected class PriorityThreadQueue extends ThreadQueue
     {
-    	/**
+        /**
          * <tt>true</tt> if this queue should transfer priority from waiting
          * threads to the owning thread.
          */
         public boolean transferPriority;
-        
+
         protected PriorityQueue<ThreadState> priorityQueue = new PriorityQueue<ThreadState>();
-    	
+
         PriorityThreadQueue(boolean transferPriority)
         {
             this.transferPriority = transferPriority;
@@ -174,7 +176,8 @@ public class PriorityScheduler extends Scheduler {
         protected ThreadState pickNextThread()
         {
             // implement me
-        	return priorityQueue.peek();
+//            System.out.println("called pickNextThread");
+            return priorityQueue.peek();
         }
 
         public void print()
@@ -182,22 +185,22 @@ public class PriorityScheduler extends Scheduler {
             Lib.assertTrue(Machine.interrupt().disabled());
             // implement me (if you want)
         }
-        
+
         public boolean isEmpty()
         {
             return priorityQueue.isEmpty();
         }
-        
+
         public void add(KThread thread)
         {
             priorityQueue.add(getThreadState(thread));
         }
-        
+
 //      @Override
 //      public boolean equals(Object obj)
 //      {
 //          if (obj == null || obj.getClass() != this.getClass()) return false;
-//          
+//
 //      }
     }
 
@@ -226,9 +229,11 @@ public class PriorityScheduler extends Scheduler {
          * The list of thread queues that the associated thread has acquired.
          */
         protected LinkedList<PriorityThreadQueue> acquiredQueues;
-        
+
+        protected PriorityThreadQueue waitingQueue;
+
         protected int effectivePriority;
-        
+
         /**
          * Allocate a new <tt>ThreadState</tt> object and associate it with the
          * specified thread.
@@ -241,6 +246,7 @@ public class PriorityScheduler extends Scheduler {
             acquiredQueues = new LinkedList<PriorityThreadQueue>();
             setPriority(priorityDefault);
             waitingTime = Machine.timer().getTime();
+            calculateEffectivePriority();
         }
 
         /**
@@ -261,7 +267,36 @@ public class PriorityScheduler extends Scheduler {
         public int getEffectivePriority()
         {
             // implement me
-            return priority;
+            calculateEffectivePriority();
+            return effectivePriority;
+        }
+
+        private void calculateEffectivePriority()
+        {
+            int ep = this.priority;
+            
+            for(PriorityThreadQueue q :this.acquiredQueues)
+            {
+                ThreadState other = q.pickNextThread();
+                if(other != null)
+                {
+                    ep = Math.max(other.priority, this.priority);
+                }
+            }
+            
+            if(effectivePriority != ep)
+            { // if priority needs to be donated
+                System.out.println("donating priority");
+                effectivePriority = ep;
+                for (PriorityThreadQueue q : this.acquiredQueues)
+                {
+                    ThreadState other = q.pickNextThread();
+                    if(other != null)
+                    {
+                        other.calculateEffectivePriority();
+                    }
+                }
+            }
         }
 
         /**
@@ -275,6 +310,8 @@ public class PriorityScheduler extends Scheduler {
                 return;
 
             this.priority = priority;
+
+//            calculateEffectivePriority();
 
             // implement me
         }
@@ -294,6 +331,8 @@ public class PriorityScheduler extends Scheduler {
         {
             this.waitingTime = Machine.timer().getTime();
             waitQueue.add(this.thread);
+            waitingQueue = waitQueue;
+//            calculateEffectivePriority();
         }
 
         /**
@@ -306,39 +345,41 @@ public class PriorityScheduler extends Scheduler {
          * @see    nachos.threads.ThreadQueue#acquire
          * @see    nachos.threads.ThreadQueue#nextThread
          */
-        public void acquire(PriorityThreadQueue waitQueue) 
+        public void acquire(PriorityThreadQueue waitQueue)
         {
             // implement me
-            Lib.assertTrue(waitQueue.isEmpty());
             acquiredQueues.add(waitQueue);
+//            calculateEffectivePriority();
         }
-        
+
         public void release(PriorityThreadQueue waitQueue)
         {
             acquiredQueues.remove(waitQueue);
+//            calculateEffectivePriority();
         }
-        
+
         @Override
         public int compareTo(ThreadState o)
         {
-        	if (this.priority > o.priority) 
-        	{
-        		return 1;
-        	}
-        	
-        	if (this.priority < o.priority)
-        	{
-        		return -1;
-        	}
-        	
-        	// priorities are equal
-        	if (this.waitingTime < o.waitingTime)
-        	{
-        		return -1;
-        	}
-        	
-        	//this.waitStartTime > o.waitStartTime
-        	return 1;
+
+            if (this.effectivePriority > o.effectivePriority) //7 maximum > 3
+            {
+                return 1;
+            }
+
+            if (this.effectivePriority < o.effectivePriority)
+            {
+                return -1;
+            }
+
+            // priorities are equal
+            if (this.waitingTime < o.waitingTime)
+            {
+                return 1;
+            }
+
+            //this.waitStartTime > o.waitStartTime
+            return -1;
         }
     }
 }
