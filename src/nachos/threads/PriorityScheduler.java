@@ -136,6 +136,13 @@ public class PriorityScheduler extends Scheduler {
         public boolean transferPriority;
         
         protected PriorityQueue<ThreadState> priorityQueue = new PriorityQueue<ThreadState>();
+
+
+		/**
+		 * thread that locks this PriorityThreadQueue
+		 * used by ThreadState.acquire(), ThreadState.waitForAccess(), and ThreadState.release()
+		 */
+		private KThread lockingThread = null;
     	
         PriorityThreadQueue(boolean transferPriority)
         {
@@ -242,6 +249,7 @@ public class PriorityScheduler extends Scheduler {
             this.thread = thread;
             acquiredQueues = new LinkedList<>();
             setPriority(priorityDefault);
+            waitingQueues = new HashSet<>();
         }
 
         /**
@@ -267,11 +275,18 @@ public class PriorityScheduler extends Scheduler {
         public void updateEffectivePriority() {
             // working on it
 			// remove associated thread from all queues it is waiting on
+
+			// if no queues are acquired, no donors are available, effective priority is base priority
+
+			if(acquiredQueues.isEmpty()) {
+				return;
+			}
+
 			for(PriorityThreadQueue i : waitingQueues) {
 				i.priorityQueue.remove(this);
 			}
 
-			// compare top priorities of each top item in acquired queues
+			// find greatest priority among donors and set effective priority to that value
 			int topPri = this.priority;
 			for(PriorityThreadQueue i : acquiredQueues) {
 				if(i.transferPriority) {
@@ -279,7 +294,7 @@ public class PriorityScheduler extends Scheduler {
 					if(nextTS != null) {
 						// recursively call getEffectivePriority to find effective priority of all top threads in queues
 						int nextPri = nextTS.getEffectivePriority();
-						if(nextPri > topPri) topPri = nextPri;
+						topPri = Math.max(topPri, nextPri);
 					}
 				}
 			}
@@ -321,7 +336,15 @@ public class PriorityScheduler extends Scheduler {
          */
         public void waitForAccess(PriorityThreadQueue waitQueue) {
             this.waitStartTime = Machine.timer().getTime();
-            waitQueue.add(this.thread);
+
+            // if associated thread is not already waiting on PriorityThreadQueue, add to waitingQueues set
+            if(!waitingQueues.contains(waitQueue)) {
+            	waitingQueues.add(waitQueue);
+
+            	waitQueue.priorityQueue.add(this);
+			}
+            // waitQueue.add(this.thread);
+            // this.waitingQueues.add(waitQueue);
         }
 
         /**
@@ -337,13 +360,20 @@ public class PriorityScheduler extends Scheduler {
         public void acquire(PriorityThreadQueue waitQueue) 
         {
             // implement me
-            Lib.assertTrue(waitQueue.isEmpty());
-            acquiredQueues.add(waitQueue);
+            // Lib.assertTrue(waitQueue.isEmpty());
+            // acquiredQueues.add(waitQueue);
+
+			// set locking thread in waitQueue to this thread
+			waitQueue.lockingThread = this.thread;
+
         }
         
         public void release(PriorityThreadQueue waitQueue)
         {
             acquiredQueues.remove(waitQueue);
+
+            // set locking thread in waitQueue to null; queue has been released
+			waitQueue.lockingThread = null;
         }
         
 	@Override
