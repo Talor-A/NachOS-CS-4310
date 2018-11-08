@@ -177,7 +177,7 @@ public class PriorityScheduler extends Scheduler {
         protected ThreadState pickNextThread()
         {
             // implement me
-            System.out.println("called pickNextThread");
+//            System.out.println("called pickNextThread");
             return priorityQueue.peek();
         }
 
@@ -247,7 +247,7 @@ public class PriorityScheduler extends Scheduler {
             acquiredQueues = new LinkedList<PriorityThreadQueue>();
             setPriority(priorityDefault);
             waitingTime = Machine.timer().getTime();
-            calculateEffectivePriority();
+//            calculateEffectivePriority();
         }
 
         /**
@@ -274,17 +274,23 @@ public class PriorityScheduler extends Scheduler {
 
         private void calculateEffectivePriority()
         {
-            /**ThreadState[] a = (ThreadState[])waitingQueue.priorityQueue.toArray();
-             Arrays.sort(a);
-             for (int i = 0; i < a.length; i++)
-             {
-             if (a[i] == this)
-             {
-             effectivePriority = i;
-             break;
-             }
-             }*/
-            effectivePriority = priority;
+            int ep = this.priority;
+            for(PriorityThreadQueue q :this.acquiredQueues){
+                ThreadState other = q.pickNextThread();
+                if(other != null) {
+                    ep = Math.max(other.priority, this.priority);
+                }
+            }
+            if(effectivePriority != ep) { // if priority needs to be donated
+                System.out.println("donating priority");
+                effectivePriority = ep;
+                for (PriorityThreadQueue q : this.acquiredQueues) {
+                    ThreadState other = q.pickNextThread();
+                    if(other != null) {
+                        other.calculateEffectivePriority();
+                    }
+                }
+            }
         }
 
         /**
@@ -299,7 +305,7 @@ public class PriorityScheduler extends Scheduler {
 
             this.priority = priority;
 
-            calculateEffectivePriority();
+//            calculateEffectivePriority();
 
             // implement me
         }
@@ -320,7 +326,7 @@ public class PriorityScheduler extends Scheduler {
             this.waitingTime = Machine.timer().getTime();
             waitQueue.add(this.thread);
             waitingQueue = waitQueue;
-            calculateEffectivePriority();
+//            calculateEffectivePriority();
         }
 
         /**
@@ -337,24 +343,25 @@ public class PriorityScheduler extends Scheduler {
         {
             // implement me
             acquiredQueues.add(waitQueue);
-            calculateEffectivePriority();
+//            calculateEffectivePriority();
         }
 
         public void release(PriorityThreadQueue waitQueue)
         {
             acquiredQueues.remove(waitQueue);
-            calculateEffectivePriority();
+//            calculateEffectivePriority();
         }
 
         @Override
         public int compareTo(ThreadState o)
         {
-            if (this.priority > o.priority) //7 maximum > 3
+
+            if (this.effectivePriority > o.effectivePriority) //7 maximum > 3
             {
                 return 1;
             }
 
-            if (this.priority < o.priority)
+            if (this.effectivePriority < o.effectivePriority)
             {
                 return -1;
             }
