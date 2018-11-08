@@ -218,6 +218,8 @@ public class PriorityScheduler extends Scheduler {
          * The priority of the associated thread.
          */
         protected int priority;
+
+        protected int effectivePriority;
         /**
          * The system time that the associated thread began waiting.
          */
@@ -226,8 +228,11 @@ public class PriorityScheduler extends Scheduler {
          * The list of thread queues that the associated thread has acquired.
          */
         protected LinkedList<PriorityThreadQueue> acquiredQueues;
-        
-        /**
+		/**
+		 * A set of all PriorityThreadQueues that the associated thread is waiting on.
+		 */
+		protected HashSet<PriorityThreadQueue> waitingQueues;
+		/**
          * Allocate a new <tt>ThreadState</tt> object and associate it with the
          * specified thread.
          *
@@ -254,8 +259,39 @@ public class PriorityScheduler extends Scheduler {
          * @return the effective priority of the associated thread.
          */
         public int getEffectivePriority() {
-            // implement me
-            return priority;
+        	this.updateEffectivePriority();
+        	return effectivePriority;
+		}
+
+
+        public void updateEffectivePriority() {
+            // working on it
+			// remove associated thread from all queues it is waiting on
+			for(PriorityThreadQueue i : waitingQueues) {
+				i.priorityQueue.remove(this);
+			}
+
+			// compare top priorities of each top item in acquired queues
+			int topPri = this.priority;
+			for(PriorityThreadQueue i : acquiredQueues) {
+				if(i.transferPriority) {
+					ThreadState nextTS = i.priorityQueue.peek();
+					if(nextTS != null) {
+						// recursively call getEffectivePriority to find effective priority of all top threads in queues
+						int nextPri = nextTS.getEffectivePriority();
+						if(nextPri > topPri) topPri = nextPri;
+					}
+				}
+			}
+
+			// update effective priority
+			// greatest priority in acquired threads is the effective priority of this thread
+			effectivePriority = topPri;
+
+			// add updated thread back into queues
+			for(PriorityThreadQueue i : waitingQueues) {
+				i.priorityQueue.add(this);
+			}
         }
 
         /**
