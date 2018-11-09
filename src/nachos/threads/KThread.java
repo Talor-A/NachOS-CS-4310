@@ -43,6 +43,10 @@ public class KThread {
      * create an idle thread as well.
      */
     public KThread() {
+    	
+		//initialize the condition2 object
+    	condition = new Condition2(lock);
+    	
 	if (currentThread != null) {
 	    tcb = new TCB();
 	}	    
@@ -190,7 +194,11 @@ public class KThread {
 
 	Lib.assertTrue(toBeDestroyed == null);
 	toBeDestroyed = currentThread;
-
+	
+	lock.acquire(); //acquire the lock
+	
+	currentThread.condition.wake(); //wakes up all threads waiting on the condition
+	lock.release();
 
 	currentThread.status = statusFinished;
 	
@@ -276,6 +284,16 @@ public class KThread {
 	Lib.debug(dbgThread, "Joining to thread: " + toString());
 
 	Lib.assertTrue(this != currentThread);
+	
+	lock.acquire(); //get the lock
+	
+	//the thread to join has already finished running, no need to suspend the current thread
+	if (status != statusFinished)
+	{
+		condition.sleep(); //necessary to suspend current thread until other thread finishes
+	}
+
+	lock.release();
 
     }
 
@@ -439,6 +457,10 @@ public class KThread {
     private int id = numCreated++;
     /** Number of times the KThread constructor was called. */
     private static int numCreated = 0;
+    
+	//must use condition variables
+    private static Lock lock = new Lock();
+    private Condition2 condition;
 
     private static ThreadQueue readyQueue = null;
     private static KThread currentThread = null;
