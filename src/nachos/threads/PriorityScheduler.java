@@ -132,6 +132,7 @@ public class PriorityScheduler extends Scheduler {
         public boolean transferPriority;
 
         protected PriorityQueue<ThreadState> priorityQueue = new PriorityQueue<ThreadState>();
+        
         ThreadState dequeuedThread = null;
         
 
@@ -155,10 +156,10 @@ public class PriorityScheduler extends Scheduler {
         public KThread nextThread()
         {
             Lib.assertTrue(Machine.interrupt().disabled());
+            
             // implement me
             
-            ThreadState nextThread = pickNextThread();
-            priorityQueue.remove(nextThread); //same thing as priorityQueue.poll()? Since we're taking from the front of the queue?
+            ThreadState nextThread = priorityQueue.poll(); //we're taking this from the front of the queue
             
             if (nextThread == null)
             {
@@ -174,7 +175,7 @@ public class PriorityScheduler extends Scheduler {
             }
             
             dequeuedThread = nextThread;
-            return nextThread.thread;
+            return nextThread.thread; //return the thread associated with this ThreadState
         }
 
         /**
@@ -187,15 +188,6 @@ public class PriorityScheduler extends Scheduler {
         protected ThreadState pickNextThread()
         {
             // implement me
-        	
-        	boolean intStatus = Machine.interrupt().disable();
-
-			//ensure priorityQueue is properly ordered
-			//does this take the old priorityQueue and reorder it? YES!!!
-			priorityQueue = new PriorityQueue<ThreadState>(priorityQueue);
-
-			Machine.interrupt().restore(intStatus);
-			
             return priorityQueue.peek();
         }
 
@@ -243,9 +235,9 @@ public class PriorityScheduler extends Scheduler {
         {
             this.thread = thread;
             setPriority(priorityDefault);
-            acquiredQueues = new LinkedList<PriorityThreadQueue>();
-            waitingTime = Machine.timer().getTime();
             effectivePriority = priorityDefault;
+            acquiredQueues = new LinkedList<PriorityThreadQueue>();
+            waitingTime = Machine.timer().getTime();   
         }
 
         /**
@@ -271,7 +263,7 @@ public class PriorityScheduler extends Scheduler {
 
         private void calculateEffectivePriority()
         {
-        	int maxPriority = -1; //begin with no priority, get the greatest
+        	int maxPriority = -1; //begin with lowest priority, get the greatest of the threads waiting on you
         	
         	if (!acquiredQueues.isEmpty())
         	{
@@ -359,8 +351,7 @@ public class PriorityScheduler extends Scheduler {
             // implement me
         	
         	waitQueue.dequeuedThread = this;
-            enqueue(waitQueue); //or you can do acquiredQueue.add(waitQueue);
-            calculateEffectivePriority();
+            acquiredQueues.add(waitQueue);
         }
         
         public void enqueue(PriorityThreadQueue waitQueue)
@@ -375,10 +366,13 @@ public class PriorityScheduler extends Scheduler {
             calculateEffectivePriority();
         }
 
+        //sort first according to the effective priority of the threads
+        //if the priority is the same, then sort based upon which thread
+        //has been waiting longer
         @Override
         public int compareTo(ThreadState other)
         {
-            if (this.effectivePriority > other.effectivePriority) //7 maximum > 3
+            if (this.effectivePriority > other.effectivePriority)
             {
                 return -1;
             }
@@ -389,13 +383,13 @@ public class PriorityScheduler extends Scheduler {
             }
 
             // priorities are equal
-            if (this.waitingTime < other.waitingTime)
+            if (this.waitingTime > other.waitingTime)
             {
-                return -1;
+                return 1;
             }
 
-            //this.waitStartTime > o.waitStartTime
-            return 1;
+            //this.waitStartTime < other.waitStartTime
+            return -1;
         }
     }
 }
