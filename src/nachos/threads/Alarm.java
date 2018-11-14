@@ -48,7 +48,7 @@ public class Alarm {
     	while(!priorityQueue.isEmpty() && (Machine.timer().getTime() > priorityQueue.peek().timeToWake))
     	{
     		Data encapsulate = priorityQueue.remove(); //get the Data object from the priority queue
-    		Condition2 condition = encapsulate.condition; //get the condition object from the Data object
+    		Condition condition = encapsulate.condition; //get the condition object from the Data object
     		Lock lock = encapsulate.lock; //get the lock from the Data object
     		lock.acquire();
     		condition.wake(); //wake up the thread to be awoken
@@ -79,7 +79,7 @@ public class Alarm {
     	
     	//create a new lock and a new condition2 each time a thread calls this method
     	Lock lock = new Lock();
-    	Condition2 condition = new Condition2(lock);
+    	Condition condition = new Condition(lock);
     	
     	//if time has already advanced, don't bother sleeping the current thread
     	//otherwise, this thread must sleep
@@ -102,11 +102,11 @@ public class Alarm {
      */
     private class Data implements Comparable<Data>
     {
-    	Condition2 condition;
+    	Condition condition;
     	long timeToWake;
     	Lock lock;
     	
-    	public Data(Condition2 thisCondition, long timeToWakeUp, Lock thisLock)
+    	public Data(Condition thisCondition, long timeToWakeUp, Lock thisLock)
     	{
     		condition = thisCondition;
     		timeToWake = timeToWakeUp;

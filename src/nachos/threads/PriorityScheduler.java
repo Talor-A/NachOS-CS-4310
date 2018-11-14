@@ -239,7 +239,6 @@ public class PriorityScheduler extends Scheduler {
             setPriority(priorityDefault);
             effectivePriority = priorityDefault;
             acquiredQueues = new LinkedList<PriorityThreadQueue>();
-            startedWaiting = Machine.timer().getTime(); 
         }
 
         /**
@@ -332,7 +331,7 @@ public class PriorityScheduler extends Scheduler {
          */
         public void waitForAccess(PriorityThreadQueue waitQueue)
         {
-            startedWaiting = Machine.timer().getTime(); //update the time the thread started waiting for access
+            startedWaiting = Machine.timer().getTime(); //set the time the thread started waiting for access
             waitQueue.add(this); //add the thread to the priority queue
             waitingQueue = waitQueue; //save the priority queue
             calculateEffectivePriority();

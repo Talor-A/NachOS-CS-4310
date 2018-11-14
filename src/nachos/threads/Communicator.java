@@ -19,8 +19,8 @@ public class Communicator {
 		indirectly using a LinkedList as a queue, which holds the speaker's words.
 	*/
 	Lock lock;
-	Condition2 conditionSpeak;
-	Condition2 conditionListen;
+	Condition conditionSpeak;
+	Condition conditionListen;
 	int numberOfListeners;
 	LinkedList<Integer> queue;
 	
@@ -31,8 +31,8 @@ public class Communicator {
     {	
 		//initialize all the objects and variables
     	lock = new Lock();
-    	conditionSpeak = new Condition2(lock);
-    	conditionListen = new Condition2(lock);
+    	conditionSpeak = new Condition(lock);
+    	conditionListen = new Condition(lock);
     	numberOfListeners = 0;
     	queue = new LinkedList<Integer>();
     }

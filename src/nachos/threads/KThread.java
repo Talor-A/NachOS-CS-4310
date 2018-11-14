@@ -45,7 +45,7 @@ public class KThread {
     public KThread() {
     	
 		//initialize the condition2 object
-    	condition = new Condition2(lock);
+    	condition = new Condition(lock);
     	
 	if (currentThread != null) {
 	    tcb = new TCB();
@@ -451,7 +451,7 @@ public class KThread {
     private TCB tcb;
 
     /**
-     * Unique identifer for this thread. Used to deterministically compare
+     * Unique identifier for this thread. Used to deterministically compare
      * threads.
      */
     private int id = numCreated++;
@@ -460,7 +460,7 @@ public class KThread {
     
 	//must use condition variables
     private static Lock lock = new Lock();
-    private Condition2 condition;
+    private Condition condition;
 
     private static ThreadQueue readyQueue = null;
     private static KThread currentThread = null;
