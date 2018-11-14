@@ -133,7 +133,7 @@ public class PriorityScheduler extends Scheduler {
 
         protected PriorityQueue<ThreadState> priorityQueue = new PriorityQueue<ThreadState>();
         
-        ThreadState dequeuedThread = null;
+        ThreadState threadState = null;
         
 
         PriorityThreadQueue(boolean transferPriority)
@@ -169,12 +169,12 @@ public class PriorityScheduler extends Scheduler {
             //there is a donation that must occur
             if (transferPriority)
             {
-            	dequeuedThread.release(this);
+            	threadState.release(this);
             	nextThread.waitingQueue = null;
             	nextThread.enqueue(this);
             }
             
-            dequeuedThread = nextThread;
+            threadState = nextThread;
             return nextThread.thread; //return the thread associated with this ThreadState
         }
 
@@ -188,7 +188,7 @@ public class PriorityScheduler extends Scheduler {
         protected ThreadState pickNextThread()
         {
             // implement me
-            return priorityQueue.peek();
+            return priorityQueue.peek(); //the front of the priority queue holds the next thread to be scheduled
         }
 
         public void print()
@@ -197,6 +197,7 @@ public class PriorityScheduler extends Scheduler {
             // implement me (if you want)
         }
 
+        //allows a ThreadState to add threads to the priority queue of a PriorityThreadQueue object
         public void add(ThreadState thread)
         {
             priorityQueue.add(thread);
@@ -217,12 +218,13 @@ public class PriorityScheduler extends Scheduler {
         
         protected int priority = priorityDefault;
         
-        public long waitingTime;
+        public long startedWaiting; //to hold how long the thread has been waiting
         
         protected LinkedList<PriorityThreadQueue> acquiredQueues;
         
         protected int effectivePriority;
         
+        //If there is a donation, capture the priority queue the ThreadState is in
         protected PriorityThreadQueue waitingQueue = null;
 
         /**
@@ -237,7 +239,7 @@ public class PriorityScheduler extends Scheduler {
             setPriority(priorityDefault);
             effectivePriority = priorityDefault;
             acquiredQueues = new LinkedList<PriorityThreadQueue>();
-            waitingTime = Machine.timer().getTime();   
+            startedWaiting = Machine.timer().getTime(); 
         }
 
         /**
@@ -265,32 +267,37 @@ public class PriorityScheduler extends Scheduler {
         {
         	int maxPriority = -1; //begin with lowest priority, get the greatest of the threads waiting on you
         	
+        	//loop through all threads in the queue. If there is a donation and the thread has a higher priority
+        	//than the current thread, a donation must occur. Raise the effective priority of this ThreadState
         	if (!acquiredQueues.isEmpty())
         	{
         		for (int i = 0; i < acquiredQueues.size(); i++)
         		{
         			PriorityThreadQueue thread = acquiredQueues.get(i);
-        			ThreadState donationNecessary = thread.pickNextThread();
+        			ThreadState nextThread = thread.pickNextThread();
         			
-        			if (donationNecessary != null)
+        			if (nextThread != null)
         			{
-        				if ((donationNecessary.getEffectivePriority() > maxPriority) && thread.transferPriority)
+        				if ((nextThread.getEffectivePriority() > maxPriority) && thread.transferPriority)
 						{
-							maxPriority = donationNecessary.getEffectivePriority();
+							maxPriority = nextThread.getEffectivePriority();
 						}
         			}
         		}
         	}
         	
+        	//the greatest effective priority is the current priority
         	if (this.getPriority() > maxPriority) maxPriority = this.getPriority();
         	
         	effectivePriority = maxPriority;
         	
-        	if (waitingQueue != null && waitingQueue.dequeuedThread != null)
+        	//recalculate the effective priority of the ThreadState if it doesn't match that of
+        	//the ThreadState owned by the PriorityThreadQueue
+        	if (waitingQueue != null && waitingQueue.threadState != null)
         	{
-        		if (effectivePriority != waitingQueue.dequeuedThread.effectivePriority)
+        		if (effectivePriority != waitingQueue.threadState.effectivePriority)
         		{
-        			waitingQueue.dequeuedThread.calculateEffectivePriority();
+        			waitingQueue.threadState.calculateEffectivePriority();
         		}
         	}
         }
@@ -310,11 +317,6 @@ public class PriorityScheduler extends Scheduler {
             // implement me
 
             calculateEffectivePriority();
-            
-            if (waitingQueue != null && waitingQueue.dequeuedThread != null)
-            {
-            	waitingQueue.dequeuedThread.calculateEffectivePriority();
-            }
         }
 
         /**
@@ -330,9 +332,9 @@ public class PriorityScheduler extends Scheduler {
          */
         public void waitForAccess(PriorityThreadQueue waitQueue)
         {
-            waitingTime = Machine.timer().getTime();
-            waitQueue.add(this);
-            waitingQueue = waitQueue;
+            startedWaiting = Machine.timer().getTime(); //update the time the thread started waiting for access
+            waitQueue.add(this); //add the thread to the priority queue
+            waitingQueue = waitQueue; //save the priority queue
             calculateEffectivePriority();
         }
 
@@ -350,7 +352,7 @@ public class PriorityScheduler extends Scheduler {
         {
             // implement me
         	
-        	waitQueue.dequeuedThread = this;
+        	waitQueue.threadState = this;
             acquiredQueues.add(waitQueue);
         }
         
@@ -374,22 +376,22 @@ public class PriorityScheduler extends Scheduler {
         {
             if (this.effectivePriority > other.effectivePriority)
             {
-                return -1;
+                return -1; //put it towards the front of the queue, it has a higher priority
             }
 
             if (this.effectivePriority < other.effectivePriority)
             {
-                return 1;
+                return 1; //put it towards the end of the queue, it has a lower priority
             }
 
             // priorities are equal
-            if (this.waitingTime > other.waitingTime)
+            if (this.startedWaiting < other.startedWaiting)
             {
-                return 1;
+                return -1; //put it towards the front of the queue, it has been waiting longer
             }
 
-            //this.waitStartTime < other.waitStartTime
-            return -1;
+            //this.waitStartTime > other.waitStartTime
+            return 1; //put it towards the end of the queue, it has not been waiting as long
         }
     }
 }
