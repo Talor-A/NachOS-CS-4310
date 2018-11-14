@@ -133,7 +133,7 @@ public class PriorityScheduler extends Scheduler {
 
         protected PriorityQueue<ThreadState> priorityQueue = new PriorityQueue<ThreadState>();
         
-        ThreadState threadState = null;
+        ThreadState owningThread = null;
         
 
         PriorityThreadQueue(boolean transferPriority)
@@ -169,12 +169,12 @@ public class PriorityScheduler extends Scheduler {
             //there is a donation that must occur
             if (transferPriority)
             {
-            	threadState.release(this);
+            	owningThread.release(this);
             	nextThread.waitingQueue = null;
             	nextThread.enqueue(this);
             }
             
-            threadState = nextThread;
+            owningThread = nextThread;
             return nextThread.thread; //return the thread associated with this ThreadState
         }
 
@@ -293,11 +293,11 @@ public class PriorityScheduler extends Scheduler {
         	
         	//recalculate the effective priority of the ThreadState if it doesn't match that of
         	//the ThreadState owned by the PriorityThreadQueue
-        	if (waitingQueue != null && waitingQueue.threadState != null)
+        	if (waitingQueue != null && waitingQueue.owningThread != null)
         	{
-        		if (effectivePriority != waitingQueue.threadState.effectivePriority)
+        		if (effectivePriority != waitingQueue.owningThread.effectivePriority)
         		{
-        			waitingQueue.threadState.calculateEffectivePriority();
+        			waitingQueue.owningThread.calculateEffectivePriority();
         		}
         	}
         }
@@ -352,7 +352,7 @@ public class PriorityScheduler extends Scheduler {
         {
             // implement me
         	
-        	waitQueue.threadState = this;
+        	waitQueue.owningThread = this;
             acquiredQueues.add(waitQueue);
         }
         
