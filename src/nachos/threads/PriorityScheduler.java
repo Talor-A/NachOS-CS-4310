@@ -272,12 +272,12 @@ public class PriorityScheduler extends Scheduler {
         	{
         		for (int i = 0; i < acquiredQueues.size(); i++)
         		{
-        			PriorityThreadQueue thread = acquiredQueues.get(i);
-        			ThreadState nextThread = thread.pickNextThread();
+        			PriorityThreadQueue queue = acquiredQueues.get(i);
+        			ThreadState nextThread = queue.pickNextThread();
         			
         			if (nextThread != null)
         			{
-        				if ((nextThread.getEffectivePriority() > maxPriority) && thread.transferPriority)
+        				if ((nextThread.getEffectivePriority() > maxPriority) && queue.transferPriority)
 						{
 							maxPriority = nextThread.getEffectivePriority();
 						}
@@ -291,12 +291,13 @@ public class PriorityScheduler extends Scheduler {
         	effectivePriority = maxPriority;
         	
         	//recalculate the effective priority of the ThreadState if it doesn't match that of
-        	//the ThreadState owned by the PriorityThreadQueue
+        	//the ThreadState that owns the resource guarded by the ThreadQueue
         	if (waitingQueue != null && waitingQueue.owningThread != null)
         	{
         		if (effectivePriority != waitingQueue.owningThread.effectivePriority)
         		{
-        			waitingQueue.owningThread.calculateEffectivePriority();
+        		    // if this priority has changed, we should check if the top thread should be updated
+        		    waitingQueue.owningThread.calculateEffectivePriority();
         		}
         	}
         }
