@@ -30,7 +30,7 @@ public final class Machine {
 	// get the current directory (.)
 	baseDirectory = new File(new File("").getAbsolutePath());
 	// get the nachos directory (./nachos)
-	nachosDirectory = new File(baseDirectory, "nachos");
+	nachosDirectory = new File(baseDirectory, "src\\nachos");
 
 	String testDirectoryName =
 	    Config.getString("FileSystem.testDirectory");
@@ -41,8 +41,10 @@ public final class Machine {
 	}
 	else {
 	    // use ../test
-	    testDirectory = new File(baseDirectory.getParentFile(), "test");
+	    testDirectory = new File(nachosDirectory, "/test");
 	}
+	
+	//System.out.println("TestDirectory: " + nachosDirectory + "\\test");
 
 	securityManager = new NachosSecurityManager(testDirectory);
 	privilege = securityManager.getPrivilege();
