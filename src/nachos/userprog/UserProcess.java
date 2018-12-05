@@ -578,6 +578,22 @@ public class UserProcess {
     	
     	return -1;
     }
+    
+    /**
+     * Handle exit system call.
+     * @param exitCode The exit code.
+     * @return The exit code.
+     */
+    private int handleExit(int exitCode)
+    {
+    	for (int i = 0; i < fileArray.length; i++)
+    	{
+    		if (fileArray[i] != null)
+    			fileArray[i].close();
+    	}
+    	Machine.halt();
+    	return exitCode;
+    }
 
 
     private static final int
@@ -636,6 +652,8 @@ public class UserProcess {
 		return handleClose(a0);
 	case syscallUnlink:
 		return handleUnlink(a0);
+	case syscallExit:
+		return handleExit(a0);
 
 
 	default:
