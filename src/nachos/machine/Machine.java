@@ -147,7 +147,19 @@ public final class Machine {
 		}
 		else if (arg.equals("-x")) {
 		    Lib.assertTrue(i < args.length, "switch without argument");
-		    shellProgramName = args[i++];		    
+		    shellProgramName = args[i++];
+		    int nextArg, argCount = 0;
+		    for (nextArg = i; nextArg < args.length; nextArg++)
+		    {
+		    	if (args[nextArg].startsWith("-")) break;
+		    	argCount++;
+		    }
+		    shellProgramArgs = new String[argCount];
+		    for (nextArg = 0; nextArg < argCount; nextArg++)
+		    {
+		    	shellProgramArgs[nextArg] = args[i + nextArg];
+		    }
+		    i += argCount;
 		}		    
 		else if (arg.equals("-z")) {
 		    System.out.print(copyright);
@@ -374,12 +386,20 @@ public final class Machine {
     public static String getShellProgramName() {
 	if (shellProgramName == null)
 	    shellProgramName = Config.getString("Kernel.shellProgram");
-
+	
 	Lib.assertTrue(shellProgramName != null);
 	return shellProgramName;
     }
+    
+    public static String[] getShellProgramArgs() 
+	{
+		if (shellProgramArgs == null)
+			shellProgramArgs = new String[] {};
+		return shellProgramArgs;
+	}
 
     private static String shellProgramName = null;
+    private static String[] shellProgramArgs = null;
 
     /**
      * Return the name of the process class that the kernel should use. In

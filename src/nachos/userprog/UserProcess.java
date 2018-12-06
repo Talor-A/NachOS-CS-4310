@@ -591,6 +591,7 @@ public class UserProcess {
     		if (fileArray[i] != null)
     			fileArray[i].close();
     	}
+    	System.out.println("Exiting with code " + exitCode + ".");
     	Machine.halt();
     	return exitCode;
     }
