@@ -57,6 +57,9 @@ public class StubFileSystem implements FileSystem {
 	}
 	
 	public void run() {
+		if (f.exists())
+			System.out.println("file exists.");
+		else System.out.println("File does not exist!");
 	    successful = f.delete();
 	}
 	

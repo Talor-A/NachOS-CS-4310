@@ -572,6 +572,7 @@ public class UserProcess {
     			Machine.stubFileSystem().remove(fileName); //delete the associated file from the stub file system
     			closedFiles[i] = null; //remove the entry from the closedFile
     			
+    			
     			return 0;
     		}
     	}
@@ -591,7 +592,7 @@ public class UserProcess {
     		if (fileArray[i] != null)
     			fileArray[i].close();
     	}
-    	System.out.println("Exiting with code " + exitCode + ".");
+    	System.out.println("User process exited with code " + exitCode + ".");
     	Machine.halt();
     	return exitCode;
     }
