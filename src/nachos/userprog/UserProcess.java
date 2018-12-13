@@ -542,6 +542,7 @@ public class UserProcess {
     		{
     			closedFiles[i] = fileArray[fileIndex]; //swap in the closed file into our array of closed files, saving it's location
     			fileArray[fileIndex] = null; //delete the index from the original array
+    			break;
     		}
     	}
     	
