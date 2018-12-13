@@ -574,7 +574,7 @@ public class UserProcess {
     	
     	for (int i = 0; i < closedFiles.length; i++)
     	{
-    		if (closedFiles[i].getName().equals(file.getName())) //we found our index, meaning file is currently closed
+    		if (closedFiles[i] != null && closedFiles[i].getName().equals(file.getName())) //we found our index, meaning file is currently closed
     		{
     			Machine.stubFileSystem().remove(fileName); //delete the associated file from the stub file system
     			closedFiles[i] = null; //remove the entry from the closedFile
