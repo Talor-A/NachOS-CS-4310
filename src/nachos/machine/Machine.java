@@ -149,15 +149,19 @@ public final class Machine {
 		    Lib.assertTrue(i < args.length, "switch without argument");
 		    shellProgramName = args[i++];
 		    int nextArg, argCount = 0;
+		    // check how many user program arguments there are
 		    for (nextArg = i; nextArg < args.length; nextArg++)
 		    {
 		    	if (args[nextArg].startsWith("-")) break;
 		    	argCount++;
 		    }
-		    shellProgramArgs = new String[argCount];
+		    // first argument is the program name
+		    shellProgramArgs = new String[argCount + 1];
+		    shellProgramArgs[0] = shellProgramName;
+		    // load the user program arguments
 		    for (nextArg = 0; nextArg < argCount; nextArg++)
 		    {
-		    	shellProgramArgs[nextArg] = args[i + nextArg];
+		    	shellProgramArgs[nextArg + 1] = args[i + nextArg];
 		    }
 		    i += argCount;
 		}		    
