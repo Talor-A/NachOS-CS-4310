@@ -542,11 +542,11 @@ public class UserProcess {
     		{
     			closedFiles[i] = fileArray[fileIndex]; //swap in the closed file into our array of closed files, saving it's location
     			fileArray[fileIndex] = null; //delete the index from the original array
-    			break;
+    			return 0; //success, return 0
     		}
     	}
     	
-    	return 0; //success, return 0
+    	return -1;  //the closed file could not be saved to the closedFiles array
     }
     
     /**
@@ -566,6 +566,12 @@ public class UserProcess {
     	String fileName = readVirtualMemoryString(memoryAddress, 256);
     	OpenFile file = Machine.stubFileSystem().open(fileName, false); //false because a new file is not being made, the file should already exist
     	
+    	if (file == null)
+        {
+            System.out.println("File does not exist.");
+            return -1;
+        }
+    	
     	for (int i = 0; i < closedFiles.length; i++)
     	{
     		if (closedFiles[i].getName().equals(file.getName())) //we found our index, meaning file is currently closed
@@ -573,12 +579,11 @@ public class UserProcess {
     			Machine.stubFileSystem().remove(fileName); //delete the associated file from the stub file system
     			closedFiles[i] = null; //remove the entry from the closedFile
     			
-    			
     			return 0;
     		}
     	}
     	
-    	return -1;
+    	return -1; // the file to be deleted could not be found
     }
     
     /**
