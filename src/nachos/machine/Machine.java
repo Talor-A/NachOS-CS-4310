@@ -30,7 +30,7 @@ public final class Machine {
 	// get the current directory (.)
 	baseDirectory = new File(new File("").getAbsolutePath());
 	// get the nachos directory (./nachos)
-	nachosDirectory = new File(baseDirectory, "src\\nachos");
+	nachosDirectory = new File(baseDirectory, "src/nachos");
 
 	String testDirectoryName =
 	    Config.getString("FileSystem.testDirectory");
